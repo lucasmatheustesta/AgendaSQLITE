@@ -14,17 +14,18 @@ import java.util.List;
 
 import br.edu.ifspsaocarlos.agenda.R;
 import br.edu.ifspsaocarlos.agenda.model.Contato;
+import io.realm.RealmResults;
 
 /**
  * Created by lucas on 08/11/16.
  */
 
 public class ContatoAdapter extends RecyclerView.Adapter<ContatoAdapter.ContatoViewHolder> {
-    private List<Contato> contatos;
+    private RealmResults<Contato> contatos;
     private Context context;
     private static ItemClickListener clickListener;
 
-    public ContatoAdapter(List<Contato> contatos, Context context) {
+    public ContatoAdapter(RealmResults<Contato> contatos, Context context) {
         this.contatos = contatos;
         this.context = context;
     }

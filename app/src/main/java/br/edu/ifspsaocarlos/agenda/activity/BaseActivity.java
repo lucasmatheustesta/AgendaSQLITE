@@ -16,18 +16,16 @@ import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.Menu;
 import android.view.View;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import br.edu.ifspsaocarlos.agenda.R;
 import br.edu.ifspsaocarlos.agenda.adapter.ContatoAdapter;
-import br.edu.ifspsaocarlos.agenda.data.ContatoDAO;
 import br.edu.ifspsaocarlos.agenda.model.Contato;
+import io.realm.Realm;
+import io.realm.RealmResults;
 
 public class BaseActivity extends AppCompatActivity {
-    protected ContatoDAO cDAO;
+    protected Realm realm;
     private RecyclerView recyclerView;
-    protected List<Contato> contatos = new ArrayList<>();
+    protected RealmResults<Contato> contatos;
     private SearchView searchView;
     private ContatoAdapter adapter;
 
@@ -35,7 +33,7 @@ public class BaseActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        cDAO = new ContatoDAO(this);
+        realm = Realm.getDefaultInstance();
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         recyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);
@@ -85,7 +83,13 @@ public class BaseActivity extends AppCompatActivity {
     }
 
     protected void setupRecyclerView(String nomeOuEmailContato) {
-        contatos = cDAO.buscaContato(nomeOuEmailContato);
+        if(nomeOuEmailContato == null) {
+            contatos = realm.where(Contato.class).findAll();
+        }
+        else {
+            contatos = realm.where(Contato.class).contains("nome", nomeOuEmailContato).or().contains("email", nomeOuEmailContato).findAll();
+        }
+
         adapter = new ContatoAdapter(contatos, this);
         recyclerView.setAdapter(adapter);
         adapter.setClickListener(new ContatoAdapter.ItemClickListener() {
@@ -93,7 +97,7 @@ public class BaseActivity extends AppCompatActivity {
             public void onItemClick(View view, int position) {
                 final Contato contato = contatos.get(position);
                 Intent i = new Intent(getApplicationContext(), DetalheActivity.class);
-                i.putExtra("contato", contato);
+                i.putExtra("contato", contato.getId());
                 startActivityForResult(i, 2);
             }
         });
@@ -108,8 +112,9 @@ public class BaseActivity extends AppCompatActivity {
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
                 if(direction == ItemTouchHelper.RIGHT) {
                     Contato contato = contatos.get(viewHolder.getAdapterPosition());
-                    cDAO.apagaContato(contato);
-                    contatos.remove(viewHolder.getAdapterPosition());
+                    realm.beginTransaction();
+                    contato.deleteFromRealm();
+                    realm.commitTransaction();
                     recyclerView.getAdapter().notifyDataSetChanged();
                     showSnackBar("Contato removido");
                 }
